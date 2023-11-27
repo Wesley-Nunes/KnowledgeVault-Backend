@@ -59,7 +59,7 @@ func main() {
 	r.HandleFunc("/books", CreateBook(pool)).Methods("POST")
 
 	srv := &http.Server{
-		Addr:         os.Getenv("HOST_ADDRESS"),
+		Addr:         ":" + os.Getenv("PORT"),
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
