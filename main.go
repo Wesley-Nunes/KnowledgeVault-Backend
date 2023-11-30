@@ -28,13 +28,7 @@ func shutdownServer(srv *http.Server, wait time.Duration) {
 	os.Exit(0)
 }
 
-func main() {
-	// Load the server
-	var wait time.Duration
-	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully waits for existing connections to finish - e.g. 15s or 1m")
-	flag.Parse()
-
-	// Load the database
+func GetConnPool() *pgxpool.Pool {
 	config, err := pgxpool.ParseConfig(os.Getenv("KNOWLEDGEVAULT_DATABASE_URL"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to parse database URL: %v\n", err)
@@ -49,13 +43,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	log.Println("Connected")
+
+	return pool
+}
+
+func main() {
+	// Load the server
+	var wait time.Duration
+	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully waits for existing connections to finish - e.g. 15s or 1m")
+	flag.Parse()
+
+	pool := GetConnPool()
 	defer pool.Close()
-
-	fmt.Println("Connected!")
-
 	r := mux.NewRouter()
-
-	// Requests handles
 	r.HandleFunc("/books", CreateBook(pool)).Methods("POST")
 
 	srv := &http.Server{

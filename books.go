@@ -12,17 +12,21 @@ import (
 type BookRequest struct {
 	Title  string `json:"title"`
 	Author string `json:"author"`
+	Pages  int    `json:"pages"`
+	Cover  string `json:"cover"`
 }
 
 type Book struct {
 	Id     int    `json:"id"`
 	Title  string `json:"title"`
 	Author string `json:"author"`
+	Pages  int    `json:"pages"`
+	Cover  string `json:"cover"`
 }
 
 func CreateBook(dbConn *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sqlInsert := "INSERT INTO books (title, author) VALUES ($1, $2) RETURNING id;"
+		sqlInsert := "INSERT INTO books (title, author, pages, cover) VALUES ($1, $2, $3, $4) RETURNING id;"
 		var reqBook BookRequest
 		var bookId int
 
@@ -31,13 +35,12 @@ func CreateBook(dbConn *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
-		// Check if required fields are missing
-		if reqBook.Title == "" || reqBook.Author == "" {
-			http.Error(w, "Error: Title and Author are required fields", http.StatusBadRequest)
+		if reqBook.Title == "" || reqBook.Author == "" || reqBook.Pages == 0 {
+			http.Error(w, "Error: Title, Author, and Pages are required fields", http.StatusUnprocessableEntity)
 			return
 		}
 
-		err := dbConn.QueryRow(r.Context(), sqlInsert, reqBook.Title, reqBook.Author).Scan(&bookId)
+		err := dbConn.QueryRow(r.Context(), sqlInsert, reqBook.Title, reqBook.Author, reqBook.Pages, reqBook.Cover).Scan(&bookId)
 		if err != nil {
 			if strings.Contains(err.Error(), "SQLSTATE 23505") {
 				http.Error(w, "Error: Book already registered.", http.StatusConflict)
@@ -52,10 +55,12 @@ func CreateBook(dbConn *pgxpool.Pool) http.HandlerFunc {
 			Id:     bookId,
 			Title:  reqBook.Title,
 			Author: reqBook.Author,
+			Pages:  reqBook.Pages,
+			Cover:  reqBook.Cover,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(book)
-		log.Printf("Create successfully: id: %d, title: %s, author: %s\n", book.Id, book.Title, book.Author)
+		log.Printf("Create successfully:\n%+v\n", book)
 	}
 }
