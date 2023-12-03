@@ -1,4 +1,4 @@
-package main
+package routes
 
 import (
 	"encoding/json"
@@ -36,7 +36,7 @@ func CreateBook(dbConn *pgxpool.Pool) http.HandlerFunc {
 		}
 
 		if reqBook.Title == "" || reqBook.Author == "" || reqBook.Pages == 0 {
-			http.Error(w, "Error: Title, Author, and Pages are required fields", http.StatusUnprocessableEntity)
+			http.Error(w, "Error: title, author, and pages are required fields", http.StatusUnprocessableEntity)
 			return
 		}
 
